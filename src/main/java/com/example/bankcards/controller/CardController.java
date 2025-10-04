@@ -29,36 +29,41 @@ public class CardController {
         return ResponseEntity.ok(service.createCard(createDto));
     }
 
+    //Админ
     @PutMapping("/{id}/status")
     public ResponseEntity<CardViewDto> changeCardStatus(@PathVariable Long id,
                                                         @RequestBody CardUpdateDto updateDto) {
         return ResponseEntity.ok(service.changeCardStatus(id, updateDto));
     }
 
+    //Админ
     @DeleteMapping("/{id}/delete")
     public ResponseEntity<CardViewDto> deleteCard(@PathVariable Long id) {
         return ResponseEntity.ok(service.deleteCard(id));
     }
 
-    @GetMapping()
+    //Админ
+    @GetMapping
     public ResponseEntity<List<CardViewDto>> getAllCards() {
         return ResponseEntity.ok(service.getAllCards());
     }
 
 
 
-    //Обычный челик
-    @GetMapping("/{id}")
+    //Обычный пользователь
+    @GetMapping("/user/{id}")
     public ResponseEntity<CardViewDto> getCard(@PathVariable Long id) {
         return ResponseEntity.ok(service.getCard(id));
     }
 
-    @GetMapping()
+    //Обычный пользователь
+    @GetMapping("/user")
     public ResponseEntity<List<CardViewDto>> getAllCardsForUser() {
         return ResponseEntity.ok(service.getAllCardsForUser());
     }
 
-    @PutMapping("/{id}/status")
+    //Обычный пользователь
+    @PutMapping("/user/{id}/block")
     public ResponseEntity<CardViewDto> blockCard(@PathVariable Long id) {
         return ResponseEntity.ok(service.blockCard(id));
     }

@@ -5,7 +5,6 @@ import java.math.BigDecimal;
 public record PaymentViewDto(
         BigDecimal sum,
         String cardSenderNumber,
-        String cardPayeeNumber,
-        PaymentStatus status
+        String cardPayeeNumber
 ) {
 }

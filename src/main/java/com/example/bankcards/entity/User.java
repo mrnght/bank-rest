@@ -18,15 +18,18 @@ import lombok.Setter;
 @Builder
 @Getter
 @Setter
-@Table(name = "user")
+@Table(name = "person")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "name", length = 64, nullable = false)
-    private String name;
+    private String username;
 
     @Column(name = "password", length = 128, nullable = false)
     private String password;
+
+    @Column(name = "role", length = 32, nullable = false)
+    private String role;
 }

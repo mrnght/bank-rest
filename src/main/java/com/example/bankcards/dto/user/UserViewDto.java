@@ -1,4 +1,6 @@
 package com.example.bankcards.dto.user;
 
-public class UserViewDto {
+public record UserViewDto(
+        String name
+) {
 }

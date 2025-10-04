@@ -1,27 +1,52 @@
 package com.example.bankcards.service.user;
 
-import com.example.bankcards.dto.user.UserCreateDto;
+import com.example.bankcards.dto.user.UserAuthenticationDto;
 import com.example.bankcards.dto.user.UserViewDto;
 import com.example.bankcards.entity.User;
 import com.example.bankcards.mapper.UserMapper;
 import com.example.bankcards.repository.UserRepository;
+import com.example.bankcards.util.JWTUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository repository;
     private final UserMapper mapper;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JWTUtil jwtUtil;
 
     @Override
     @Transactional
-    public UserViewDto createUser(UserCreateDto createDto) {
-        User user = mapper.toEntity(createDto);
+    public Map<String, String> createUser(UserAuthenticationDto authenticationDto) {
+        User user = mapper.toEntity(authenticationDto);
+        String encodePassword = passwordEncoder.encode(user.getPassword());
+        user.setPassword(encodePassword);
+        user.setRole("ROLE_USER");
         repository.save(user);
-        return mapper.toViewDto(user);
+
+        String token = jwtUtil.generateToken(authenticationDto.username());
+        return Map.of("jwt-token", token);
+    }
+
+    @Override
+    public Map<String, String> performLogin(UserAuthenticationDto authenticationDto) {
+        UsernamePasswordAuthenticationToken authenticationToken =
+                new UsernamePasswordAuthenticationToken(authenticationDto.username(), authenticationDto.password());
+        authenticationManager.authenticate(authenticationToken);
+        String token = jwtUtil.generateToken(authenticationDto.username());
+        return Map.of("jwt-token", token);
     }
 
     @Override

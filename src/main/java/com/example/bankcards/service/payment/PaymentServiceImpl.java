@@ -1,7 +1,6 @@
 package com.example.bankcards.service.payment;
 
 import com.example.bankcards.dto.payment.PaymentCreateDto;
-import com.example.bankcards.dto.payment.PaymentStatus;
 import com.example.bankcards.dto.payment.PaymentViewDto;
 import com.example.bankcards.entity.Card;
 import com.example.bankcards.entity.Payment;
@@ -33,7 +32,7 @@ public class PaymentServiceImpl implements PaymentService {
         Card payeeCard = cardRepository.findByCardNumberOrElseThrow(cardPayeeNumber);
 
         BigDecimal sum = createDto.sum();
-        sendSum(senderCard, payeeCard, sum);
+        checkSumAndSend(senderCard, payeeCard, sum);
 
         Payment payment = Payment.builder()
                 .sum(sum)
@@ -45,7 +44,7 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentMapper.toViewDto(payment);
     }
 
-    private void sendSum(Card senderCard, Card payeeCard, BigDecimal sum) {
+    private void checkSumAndSend(Card senderCard, Card payeeCard, BigDecimal sum) {
         BigDecimal senderBalance = senderCard.getBalance().subtract(sum);
         if (senderBalance.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("На балансе отправителя недостаточно средств.");
