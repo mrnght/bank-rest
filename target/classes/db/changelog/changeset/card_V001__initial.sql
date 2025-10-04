@@ -1,0 +1,24 @@
+CREATE TABLE person (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    name VARCHAR(64) NOT NULL,
+    password VARCHAR(128) NOT NULL,
+    role VARCHAR(32) NOT NULL
+);
+
+CREATE TABLE card (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    card_number VARCHAR(16) NOT NULL,
+    owner_id BIGINT NOT NULL,
+    expiry_date TIMESTAMP NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    balance NUMERIC(19,2) DEFAULT 0,
+    CONSTRAINT fk_owner FOREIGN KEY (owner_id) REFERENCES person(id)
+);
+
+CREATE TABLE payment (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    sum NUMERIC(19,2) DEFAULT 0,
+    card_sender_number VARCHAR(16) NOT NULL,
+    card_payee_number VARCHAR(16) NOT NULL,
+    created_at TIMESTAMP NOT NULL
+);
