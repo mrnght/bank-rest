@@ -14,11 +14,11 @@ public record PaymentCreateDto(
         BigDecimal sum,
 
         @NotBlank(message = "Не указана карта для снятия средств")
-        @Schema(description = "Номер карты-отправителя средств", example = "123456789101")
+        @Schema(description = "Номер карты-отправителя средств", example = "1234567891011121")
         String cardSenderNumber,
 
         @NotBlank(message = "Не указана карта для пополнения")
-        @Schema(description = "Номер карты-получателя средств", example = "567812349101")
+        @Schema(description = "Номер карты-получателя средств", example = "5678123491011111")
         String cardPayeeNumber
 ) {
 }

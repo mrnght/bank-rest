@@ -10,10 +10,10 @@ public record PaymentViewDto(
         @Schema(description = "Сумма перевода", example = "35")
         BigDecimal sum,
 
-        @Schema(description = "Номер карты-отправителя средств", example = "123456789101")
+        @Schema(description = "Номер карты-отправителя средств", example = "123456789101111")
         String cardSenderNumber,
 
-        @Schema(description = "Номер карты-получателя средств", example = "567812349101")
+        @Schema(description = "Номер карты-получателя средств", example = "5678123491011111")
         String cardPayeeNumber
 ) {
 }
