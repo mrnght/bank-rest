@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -45,6 +47,14 @@ public class CardController {
         return ResponseEntity.ok(service.changeCardStatus(id, updateDto));
     }
 
+    @PutMapping("/block-request/{requestId}/approve")
+    @Operation(summary = "Одобрить запрос блокировки (admin)",
+            description = "Одобряет заявку и блокирует карту",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<CardViewDto> approveBlockRequest(@PathVariable Long requestId) {
+        return ResponseEntity.ok(service.approveBlockRequest(requestId));
+    }
+
     @DeleteMapping("/{id}/delete")
     @Operation(summary = "Удалить карту (admin)",
             description = "Удаляет карту по ID",
@@ -62,6 +72,15 @@ public class CardController {
     }
 
 
+    @PutMapping("/user/{id}/block")
+    @Operation(summary = "Запрос блокировки карты (user)",
+            description = "Отправляет запрос на блокировку карты, админ должен подтвердить",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<String> requestBlockCard(@PathVariable Long id) {
+        service.requestBlockCard(id);
+        return ResponseEntity.ok("Запрос на блокировку отправлен и ожидает одобрения администратора");
+    }
+
     @GetMapping("/user/{id}")
     @Operation(summary = "Получить карту (user)",
             description = "Позволяет пользователю посмотреть карту по ID",
@@ -71,18 +90,13 @@ public class CardController {
     }
 
     @GetMapping("/user")
-    @Operation(summary = "Получить все карты пользователя (user)",
-            description = "Позволяет пользователю посмотреть все свои карты",
+    @Operation(summary = "Получить все карты пользователя (user) с пагинацией",
+            description = "Позволяет пользователю посмотреть свои карты постранично",
             security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<List<CardViewDto>> getAllCardsForUser() {
-        return ResponseEntity.ok(service.getAllCardsForUser());
-    }
-
-    @PutMapping("/user/{id}/block")
-    @Operation(summary = "Заблокировать карту (user)",
-            description = "Позволяет пользователю заблокировать карту по ID",
-            security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<CardViewDto> blockCard(@PathVariable Long id) {
-        return ResponseEntity.ok(service.blockCard(id));
+    public ResponseEntity<Page<CardViewDto>> getAllCardsForUser(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(service.getAllCardsForUser(page, size));
     }
 }

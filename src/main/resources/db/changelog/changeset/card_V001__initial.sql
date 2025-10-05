@@ -22,3 +22,12 @@ CREATE TABLE payment (
     card_payee_number VARCHAR(16) NOT NULL,
     created_at TIMESTAMP NOT NULL
 );
+
+CREATE TABLE card_block_request (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    card_id BIGINT NOT NULL,
+    requester_username VARCHAR(255) NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    FOREIGN KEY (card_id) REFERENCES card(id) ON DELETE CASCADE
+);

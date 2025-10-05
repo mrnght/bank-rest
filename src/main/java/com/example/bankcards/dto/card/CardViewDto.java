@@ -18,4 +18,12 @@ public class CardViewDto {
     private LocalDateTime expiryDate;
     @Schema(description = "Статус карты", example = "ACTIVE")
     private CardStatus status;
+
+    public String getCardNumber() {
+        if (cardNumber == null || cardNumber.length() < 4) {
+            return cardNumber;
+        }
+        String last4 = cardNumber.substring(cardNumber.length() - 4);
+        return "**** **** **** " + last4;
+    }
 }

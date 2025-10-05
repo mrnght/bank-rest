@@ -44,11 +44,11 @@ public class SecurityConfig {
                                     .requestMatchers(HttpMethod.POST, "/cards").hasRole("ADMIN")
                                     .requestMatchers(HttpMethod.PUT, "/cards/{id}/status").hasRole("ADMIN")
                                     .requestMatchers(HttpMethod.DELETE, "/cards/{id}/delete").hasRole("ADMIN")
-                                    .requestMatchers("/cards").hasRole("ADMIN")
+                                    .requestMatchers(HttpMethod.GET,"/cards").hasRole("ADMIN")
                                     .requestMatchers(HttpMethod.GET, "/cards/user/{id}").hasAnyRole("USER", "ADMIN")
-                                    .requestMatchers("/cards/user").hasRole("USER")
+                                    .requestMatchers(HttpMethod.PUT, "/cards/user").hasRole("USER")
                                     .requestMatchers(HttpMethod.PUT, "/cards/user/{id}/block").hasRole("USER")
-                                    .requestMatchers(HttpMethod.GET, "/users/{id}").hasRole("ADMIN")
+                                    .requestMatchers(HttpMethod.PUT, "/cards/block-request/{requestId}/approve").hasRole("ADMIN")
                                     .anyRequest().permitAll();
                         }
                 )

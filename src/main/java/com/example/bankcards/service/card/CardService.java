@@ -3,6 +3,7 @@ package com.example.bankcards.service.card;
 import com.example.bankcards.dto.card.CardCreateDto;
 import com.example.bankcards.dto.card.CardUpdateDto;
 import com.example.bankcards.dto.card.CardViewDto;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -17,7 +18,11 @@ public interface CardService {
 
     List<CardViewDto> getAllCards();
 
-    List<CardViewDto> getAllCardsForUser();
+    Page<CardViewDto> getAllCardsForUser(int page, int size);
 
     CardViewDto blockCard(Long id);
+
+    void requestBlockCard(Long id);
+
+    CardViewDto approveBlockRequest(Long requestId);
 }

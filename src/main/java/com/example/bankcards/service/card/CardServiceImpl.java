@@ -5,15 +5,21 @@ import com.example.bankcards.dto.card.CardCreateDto;
 import com.example.bankcards.dto.card.CardStatus;
 import com.example.bankcards.dto.card.CardUpdateDto;
 import com.example.bankcards.dto.card.CardViewDto;
+import com.example.bankcards.dto.card.RequestStatus;
 import com.example.bankcards.entity.Card;
+import com.example.bankcards.entity.CardBlockRequest;
 import com.example.bankcards.entity.User;
 import com.example.bankcards.exception.ForbiddenException;
 import com.example.bankcards.mapper.CardMapper;
+import com.example.bankcards.repository.CardBlockRequestRepository;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
@@ -27,6 +33,7 @@ public class CardServiceImpl implements CardService {
     private final CardRepository cardRepository;
     private final CardMapper mapper;
     private final UserRepository userRepository;
+    private final CardBlockRequestRepository requestRepository;
     private final JWTFilter jwtFilter;
     private static final SecureRandom random = new SecureRandom();
     private static final long MIN = 100_000_000_000L;
@@ -63,8 +70,31 @@ public class CardServiceImpl implements CardService {
         return cardNumber;
     }
 
-    @Override
     @Transactional
+    @Override
+    public void requestBlockCard(Long id) {
+        Card card = cardRepository.findByIdOrElseThrow(id);
+
+        if (card.getStatus().equals(CardStatus.EXPIRED))
+            throw new IllegalArgumentException("Невозможно заблокировать просроченную карту");
+
+        String username = jwtFilter.getUsername();
+        if (!card.getOwner().getUsername().equals(username))
+            throw new ForbiddenException("Карта принадлежит другому пользователю");
+
+        if (requestRepository.existsByCardIdAndStatus(card.getId(), RequestStatus.PENDING))
+            throw new IllegalStateException("Запрос на блокировку уже существует");
+
+        CardBlockRequest request = new CardBlockRequest();
+        request.setCard(card);
+        request.setRequesterUsername(username);
+        requestRepository.save(request);
+
+        log.info("Пользователь {} создал запрос на блокировку карты {}", username, card.getCardNumber());
+    }
+
+    @Transactional
+    @Override
     public CardViewDto changeCardStatus(Long id, CardUpdateDto updateDto) {
         Card card = cardRepository.findByIdOrElseThrow(id);
         if (card.getStatus().equals(CardStatus.EXPIRED))
@@ -72,7 +102,29 @@ public class CardServiceImpl implements CardService {
 
         mapper.update(updateDto, card);
         cardRepository.save(card);
-        log.info("Статус карты с номером: {} был изменен на {}", card.getCardNumber(), updateDto.status());
+
+        log.info("Статус карты с номером: {} был изменён на {}", card.getCardNumber(), updateDto.status());
+        return mapper.toViewDto(card);
+    }
+
+    @Transactional
+    @Override
+    public CardViewDto approveBlockRequest(Long requestId) {
+        CardBlockRequest request = requestRepository.findByIdOrElseThrow(requestId);
+        if (request.getStatus().equals(RequestStatus.APPROVED))
+            throw new IllegalStateException("Заявка уже обработана");
+
+        Card card = request.getCard();
+        if (card.getStatus().equals(CardStatus.EXPIRED))
+            throw new IllegalArgumentException("Невозможно заблокировать просроченную карту");
+
+        card.setStatus(CardStatus.BLOCKED);
+        cardRepository.save(card);
+
+        request.setStatus(RequestStatus.APPROVED);
+        requestRepository.save(request);
+
+        log.info("Заявка {} одобрена, карта {} заблокирована", requestId, card.getCardNumber());
         return mapper.toViewDto(card);
     }
 
@@ -108,14 +160,18 @@ public class CardServiceImpl implements CardService {
 
     @Override
     @Transactional
-    public List<CardViewDto> getAllCardsForUser() {
+    public Page<CardViewDto> getAllCardsForUser(int page, int size) {
         String username = jwtFilter.getUsername();
         Long userId = userRepository.findIdByUsernameOrElseThrow(username);
-        List<Card> cards = cardRepository.findByOwner_Id(userId);
-        log.info("Получения всех карт для юзера с id: {}", userId);
-        return cards.stream()
-                .map(mapper::toViewDto)
-                .toList();
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Card> cardPage = cardRepository.findByOwner_Id(userId, pageable);
+
+        log.info("Получение карт для пользователя с id: {} - страница {}, размер {}", userId, page, size);
+
+
+        var dtoPage = cardPage.map(mapper::toViewDto);
+        return dtoPage;
     }
 
     @Override

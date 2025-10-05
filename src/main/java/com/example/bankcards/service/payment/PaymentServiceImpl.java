@@ -56,6 +56,8 @@ public class PaymentServiceImpl implements PaymentService {
 
         if (!senderCard.getOwner().getUsername().equals(username))
             throw new ForbiddenException("Карта принадлежит другому пользователю");
+        if (!payeeCard.getOwner().getUsername().equals(username))
+            throw new ForbiddenException("Карта принадлежит другому пользователю");
 
         if (senderBalance.compareTo(BigDecimal.ZERO) < 0)
             throw new IllegalArgumentException("На балансе отправителя недостаточно средств.");
