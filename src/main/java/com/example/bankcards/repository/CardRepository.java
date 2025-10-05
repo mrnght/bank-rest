@@ -10,7 +10,7 @@ import java.util.Optional;
 public interface CardRepository extends JpaRepository<Card, Long> {
     default Card findByIdOrElseThrow(Long id) {
         return findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Card not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Такой карты не существует"));
     }
 
     List<Card> findByOwner_Id(Long ownerId);
@@ -21,4 +21,6 @@ public interface CardRepository extends JpaRepository<Card, Long> {
         return findByCardNumber(cardNumber)
                 .orElseThrow(() -> new EntityNotFoundException("Такой карты не существует"));
     }
+
+    boolean existsByCardNumber(String username);
 }

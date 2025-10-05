@@ -1,5 +1,7 @@
 package com.example.bankcards.config.security;
 
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,6 +12,7 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -21,6 +24,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@SecurityScheme(
+        name = "bearerAuth",
+        scheme = "bearer",
+        bearerFormat = "JWT",
+        type = SecuritySchemeType.HTTP
+)
 public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
@@ -39,6 +48,7 @@ public class SecurityConfig {
                                     .requestMatchers(HttpMethod.GET, "/cards/user/{id}").hasAnyRole("USER", "ADMIN")
                                     .requestMatchers("/cards/user").hasRole("USER")
                                     .requestMatchers(HttpMethod.PUT, "/cards/user/{id}/block").hasRole("USER")
+                                    .requestMatchers(HttpMethod.GET, "/users/{id}").hasRole("ADMIN")
                                     .anyRequest().permitAll();
                         }
                 )
@@ -64,5 +74,13 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring().requestMatchers(
+                "/swagger-ui/**",
+                "/v3/api-docs/**"
+        );
     }
 }

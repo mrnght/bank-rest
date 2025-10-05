@@ -7,6 +7,7 @@ import com.example.bankcards.dto.card.CardUpdateDto;
 import com.example.bankcards.dto.card.CardViewDto;
 import com.example.bankcards.entity.Card;
 import com.example.bankcards.entity.User;
+import com.example.bankcards.exception.ForbiddenException;
 import com.example.bankcards.mapper.CardMapper;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
@@ -27,18 +28,19 @@ public class CardServiceImpl implements CardService {
     private final CardMapper mapper;
     private final UserRepository userRepository;
     private final JWTFilter jwtFilter;
+    private static final SecureRandom random = new SecureRandom();
+    private static final long MIN = 100_000_000_000L;
+    private static final long MAX = 999_000_000_000L;
+    private static final int MAX_ATTEMPTS = 5;
 
     @Override
     @Transactional
     public CardViewDto createCard(CardCreateDto createDto) {
-        Card card = new Card();
-
-        Long min = 100_000_000_000L;
-        Long max = 999_000_000_000L;
-        Long randomNum = min + (long) (new SecureRandom().nextDouble() * (max - min + 1));
-        card.setCardNumber(String.valueOf(randomNum));
-
         User user = userRepository.findByIdOrElseThrow(createDto.ownerId());
+        String cardNumber = generateUniqueCardNumber();
+
+        Card card = new Card();
+        card.setCardNumber(cardNumber);
         card.setOwner(user);
 
         cardRepository.save(card);
@@ -46,10 +48,28 @@ public class CardServiceImpl implements CardService {
         return mapper.toViewDto(card);
     }
 
+    private String generateUniqueCardNumber() {
+        int attempts = 0;
+        String cardNumber;
+        do {
+            if (++attempts > MAX_ATTEMPTS) {
+                throw new IllegalStateException("Не удалось сгенерировать уникальный номер карты после "
+                        + MAX_ATTEMPTS + " попыток");
+            }
+            long randomNum = MIN + (long) (random.nextDouble() * (MAX - MIN + 1));
+            cardNumber = String.valueOf(randomNum);
+        } while (cardRepository.existsByCardNumber(cardNumber));
+
+        return cardNumber;
+    }
+
     @Override
     @Transactional
     public CardViewDto changeCardStatus(Long id, CardUpdateDto updateDto) {
         Card card = cardRepository.findByIdOrElseThrow(id);
+        if (card.getStatus().equals(CardStatus.EXPIRED))
+            throw new IllegalArgumentException("Невозможно поменять статус просроченной карты");
+
         mapper.update(updateDto, card);
         cardRepository.save(card);
         log.info("Статус карты с номером: {} был изменен на {}", card.getCardNumber(), updateDto.status());
@@ -61,6 +81,7 @@ public class CardServiceImpl implements CardService {
     public CardViewDto deleteCard(Long id) {
         Card card = cardRepository.findByIdOrElseThrow(id);
         cardRepository.delete(card);
+        card.setStatus(CardStatus.DELETED);
         log.info("Карта с номером {} была удалена", card.getCardNumber());
         return mapper.toViewDto(card);
     }
@@ -78,7 +99,10 @@ public class CardServiceImpl implements CardService {
     @Override
     @Transactional
     public CardViewDto getCard(Long id) {
+        String username = jwtFilter.getUsername();
         Card card = cardRepository.findByIdOrElseThrow(id);
+        if (!card.getOwner().getUsername().equals(username))
+            throw new ForbiddenException("Карта принадлежит другом пользователю");
         return mapper.toViewDto(card);
     }
 
@@ -98,6 +122,13 @@ public class CardServiceImpl implements CardService {
     @Transactional
     public CardViewDto blockCard(Long id) {
         Card card = cardRepository.findByIdOrElseThrow(id);
+        if (card.getStatus().equals(CardStatus.EXPIRED))
+            throw new IllegalArgumentException("Невозможно заблокировать просроченную карту");
+
+        String username = jwtFilter.getUsername();
+        if (!card.getOwner().getUsername().equals(username))
+            throw new ForbiddenException("Карта принадлежит другом пользователю");
+
         card.setStatus(CardStatus.BLOCKED);
         cardRepository.save(card);
         log.info("Блокировка карты с номером: {}", card.getCardNumber());
